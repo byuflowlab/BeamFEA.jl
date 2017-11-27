@@ -130,7 +130,7 @@ end
 # matrix are of size DOF*nodes x DOF*nodes
 # addedK: additional stiffness (or infinite stiffness for a rigid connection)
 function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
-    kx, ky, kz, kthetax, kthetay, kthetaz)
+    Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     nodes = length(z)
     elements = nodes - 1
@@ -140,15 +140,26 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     F = zeros(DOF*nodes)
 
     for i = 1:elements
+        start = (i-1)*DOF  # (0, 0) start of matrix
 
         Ksub, Fsub = beam_matrix(z[i+1] - z[i], EIx[i:i+1], EIy[i:i+1], EA[i:i+1],
             GJ[i:i+1], rhoA[i:i+1], rhoJ[i:i+1], Px[i:i+1], Py[i:i+1], Pz[i:i+1])
 
-        start = (i-1)*2*DOF+1
-        finish = i*2*DOF
-        idx = start:finish
-        K[idx, idx] = Ksub
-        F[idx] = Fsub
+        idx = start+1:start+2*DOF
+        K[idx, idx] += Ksub
+        F[idx] += Fsub
+    end
+
+    # ---- add point loads ----
+    for i = 1:nodes
+        start = (i-1)*DOF
+
+        F[start + 1] += Fx[i]
+        F[start + 2] += Mx[i]
+        F[start + 3] += Fy[i]
+        F[start + 4] += My[i]
+        F[start + 5] += Fz[i]
+        F[start + 6] += Mz[i]
     end
 
     # --- apply boundary conditions ----
@@ -157,15 +168,16 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     save = trues(DOF*nodes)  # nodes to keep
     for i = 1:nodes
 
+        start = (i-1)*DOF
+
         stiffness = [kx[i], kthetax[i], ky[i], kthetay[i], kz[i], kthetaz[i]]  # order for convenience
 
         for j = 1:DOF  # iterate through each DOF
 
-            idx = (i-1)*DOF+j  # corresponding index
-            if stiffness[i] == Inf  # if rigid, remove this index
-                save[idx] = false
+            if stiffness[j] == Inf  # if rigid, remove this index
+                save[start+j] = false
             else  # otherwise add directly to stiffness matrix
-                K[idx, idx] += stiffness[i]
+                K[start+j, start+j] += stiffness[j]
             end
         end
     end
@@ -177,7 +189,7 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     # ---- compute deflections
     deltasub = K\F
 
-    # add back in rigid deflections (0)
+    # put back in rigid deflections (0)
     delta = zeros(DOF*nodes)
     delta[save] = deltasub
 
