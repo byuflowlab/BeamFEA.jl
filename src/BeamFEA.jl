@@ -1,10 +1,13 @@
 module BeamFEA
 
+const DOF = 6
+
+
 """
 (private)
 see doc: stiffness matrix
 """
-function bendingstiffness(EI::Array{Float64}(2), L::Float64)
+function bendingstiffness(EI::Array{Float64, 1}, L::Float64)
 
     e1 = EI[1]
     e2 = EI[2]
@@ -75,6 +78,7 @@ end
 
 
 """
+(private)
 computes FEM matrices for one 12-dof beam element
 
 q = [x1, thetax1, y1, thetay1, z1, thetaz1, ... repeat for 2]
@@ -82,18 +86,16 @@ z is axial
 """
 function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
 
-    DOF = 12
-
     # ---- fill matrices ----
-    K = zeros(DOF, DOF)  # stiffness matrix
-    F = zeros(DOF)  # force vector
+    K = zeros(2*DOF, 2*DOF)  # stiffness matrix
+    F = zeros(2*DOF)  # force vector
 
     # axial
     kz = axialstiffness(EA, L)
     idx = [5, 11]
     K[idx, idx] = kz
 
-    fz = bendingloads(Pz, L)
+    fz = axialloads(Pz, L)
     F[idx] = fz
 
     # torsion
@@ -117,9 +119,70 @@ function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
     fy = bendingloads(Py, L)
     F[idx] = fy
 
+    return K, F
+
 end
 
 
+
+# assembles FEA matrices for the various elements into global matrices for the structure
+# EIx, EA etc. are arrays of length nodes
+# matrix are of size DOF*nodes x DOF*nodes
+# addedK: additional stiffness (or infinite stiffness for a rigid connection)
+function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    kx, ky, kz, kthetax, kthetay, kthetaz)
+
+    nodes = length(z)
+    elements = nodes - 1
+
+    # --- assemble global matrices -----
+    K = zeros(DOF*nodes, DOF*nodes)
+    F = zeros(DOF*nodes)
+
+    for i = 1:elements
+
+        Ksub, Fsub = beam_matrix(z[i+1] - z[i], EIx[i:i+1], EIy[i:i+1], EA[i:i+1],
+            GJ[i:i+1], rhoA[i:i+1], rhoJ[i:i+1], Px[i:i+1], Py[i:i+1], Pz[i:i+1])
+
+        start = (i-1)*2*DOF+1
+        finish = i*2*DOF
+        idx = start:finish
+        K[idx, idx] = Ksub
+        F[idx] = Fsub
+    end
+
+    # --- apply boundary conditions ----
+
+    # add additional stiffness (and save nodes to remove)
+    save = trues(DOF*nodes)  # nodes to keep
+    for i = 1:nodes
+
+        stiffness = [kx[i], kthetax[i], ky[i], kthetay[i], kz[i], kthetaz[i]]  # order for convenience
+
+        for j = 1:DOF  # iterate through each DOF
+
+            idx = (i-1)*DOF+j  # corresponding index
+            if stiffness[i] == Inf  # if rigid, remove this index
+                save[idx] = false
+            else  # otherwise add directly to stiffness matrix
+                K[idx, idx] += stiffness[i]
+            end
+        end
+    end
+
+    K = K[save, save]
+    F = F[save]
+
+
+    # ---- compute deflections
+    deltasub = K\F
+
+    # add back in rigid deflections (0)
+    delta = zeros(DOF*nodes)
+    delta[save] = deltasub
+
+    return delta
+end
 
 
 end # module
