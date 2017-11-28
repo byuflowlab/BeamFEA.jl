@@ -14,7 +14,7 @@ function bendingstiffness(EI::Array{Float64, 1}, L::Float64)
 
     k = [
     (6*e1 + 6*e2)/L^3   (4*e1 + 2*e2)/L^2   (-6*e1 - 6*e2)/L^3   (2*e1 + 4*e2)/L^2;
-    (4*e1 + 2*e2)/L^2   (3*e1 + 1*e2)/L^1   (-4*e1 - 2*e2)/L^2   (e1 + e2)/L;
+    (4*e1 + 2*e2)/L^2   (3*e1 + 1*e2)/L     (-4*e1 - 2*e2)/L^2   (e1 + e2)/L;
     (-6*e1 - 6*e2)/L^3  (-4*e1 - 2*e2)/L^2  (6*e1 + 6*e2)/L^3    (-2*e1 - 4*e2)/L^2;
     (2*e1 + 4*e2)/L^2   (e1 + e2)/L         (-2*e1 - 4*e2)/L^2   (1*e1 + 3*e2)/L;
     ]
@@ -76,6 +76,43 @@ function axialloads(P, L)
 end
 
 
+"""
+(private)
+see doc: Inertial Matrix
+"""
+function bendinginertial(rhoA::Array{Float64, 1}, L::Float64)
+
+    a1 = rhoA[1]
+    a2 = rhoA[2]
+
+    m = 1.0/420*[
+    (120*a1 + 36*a2)*L  (15*a1 + 7*a2)*L^2      (27*a1 + 27*a2)*L    (-7*a1 - 6*a2)*L^2;
+    (15*a1 + 7*a2)*L^2  (2.5*a1 + 1.5*a2)*L^3   (6*a1 + 7*a2)*L^2    (-1.5*a1 - 1.5*a2)*L^3;
+    (27*a1 + 27*a2)*L   (6*a1 + 7*a2)*L^2       (36*a1 + 120*a2)*L   (-7*a1 - 15*a2)*L^2;
+    (-7*a1 - 6*a2)*L^2  (-1.5*a1 - 1.5*a2)*L^3  (-7*a1 - 15*a2)*L^2  (1.5*a1 + 2.5*a2)*L^3;
+    ]
+
+    return m
+end
+
+
+"""
+(private)
+see doc: Inertial Matrix
+"""
+function axialinertial(rhoA, L)
+
+    r1 = rhoA[1]
+    r2 = rhoA[2]
+
+    m = L*[
+    (1.0/4*r1 + 1.0/12*r2)   (1.0/12*r1 + 1.0/12*r2)
+    (1.0/12*r1 + 1.0/12*r2)  (1.0/12*r1 + 1.0/4*r2)
+    ]
+
+    return m
+end
+
 
 """
 (private)
@@ -86,40 +123,60 @@ z is axial
 """
 function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
 
-    # ---- fill matrices ----
+    # initialize
     K = zeros(2*DOF, 2*DOF)  # stiffness matrix
+    M = zeros(2*DOF, 2*DOF)  # inertial matrix
     F = zeros(2*DOF)  # force vector
 
-    # axial
-    kz = axialstiffness(EA, L)
+    # --- axial ----
     idx = [5, 11]
+
+    kz = axialstiffness(EA, L)
     K[idx, idx] = kz
+
+    mz = axialinertial(rhoA, L)
+    M[idx, idx] = mz
 
     fz = axialloads(Pz, L)
     F[idx] = fz
 
-    # torsion
-    kt = axialstiffness(GJ, L)
+    # --- torsion ---
     idx = [6, 12]
+
+    kt = axialstiffness(GJ, L)
     K[idx, idx] = kt
 
-    # bending in x
-    kx = bendingstiffness(EIx, L)
+    mt = axialinertial(rhoJ, L)
+    M[idx, idx] = mt
+
+    # no distributed torsional loads
+
+    # --- bending in x ---
     idx = [1, 2, 7, 8]
+
+    kx = bendingstiffness(EIx, L)
     K[idx, idx] = kx
+
+    mx = bendinginertial(rhoA, L)
+    M[idx, idx] = mx
 
     fx = bendingloads(Px, L)
     F[idx] = fx
 
-    # bending in y
+
+    # --- bending in y ---
     ky = bendingstiffness(EIy, L)
     idx = [3, 4, 9, 10]
     K[idx, idx] = ky
 
+    my = mx  # inertial is same in x and y
+    M[idx, idx] = my
+
     fy = bendingloads(Py, L)
     F[idx] = fy
 
-    return K, F
+
+    return K, M, F
 
 end
 
@@ -137,16 +194,18 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
 
     # --- assemble global matrices -----
     K = zeros(DOF*nodes, DOF*nodes)
+    M = zeros(DOF*nodes, DOF*nodes)
     F = zeros(DOF*nodes)
 
     for i = 1:elements
         start = (i-1)*DOF  # (0, 0) start of matrix
 
-        Ksub, Fsub = beam_matrix(z[i+1] - z[i], EIx[i:i+1], EIy[i:i+1], EA[i:i+1],
+        Ksub, Msub, Fsub = beam_matrix(z[i+1] - z[i], EIx[i:i+1], EIy[i:i+1], EA[i:i+1],
             GJ[i:i+1], rhoA[i:i+1], rhoJ[i:i+1], Px[i:i+1], Py[i:i+1], Pz[i:i+1])
 
         idx = start+1:start+2*DOF
         K[idx, idx] += Ksub
+        M[idx, idx] += Msub
         F[idx] += Fsub
     end
 
@@ -161,6 +220,9 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         F[start + 5] += Fz[i]
         F[start + 6] += Mz[i]
     end
+
+    # ---- add point inertial elements -----
+
 
     # --- apply boundary conditions ----
 
@@ -183,17 +245,31 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     end
 
     K = K[save, save]
+    M = M[save, save]
     F = F[save]
 
 
-    # ---- compute deflections
-    deltasub = K\F
-
-    # put back in rigid deflections (0)
+    # ---- compute deflections -----
+    # initialize to zero so we can keep rigid deflections
     delta = zeros(DOF*nodes)
-    delta[save] = deltasub
 
-    return delta
+    try
+        deltasub = K\F
+        delta[save] = deltasub  # insert nonzero deflections
+    catch err
+        println("WARNING: structure improperly constrained.  Deflections incorrect. (Exception: ", err, ")")
+    end
+
+    # ----- compute eigenvalues -----
+    lambda, V = eig(K, M)  # eigenvalues are omega^2 (currently not using eigenvectors)
+
+    # don't save rigid modes
+    lambda = lambda[lambda .> 1e-6]
+
+    # convert to freq
+    freq = sqrt.(lambda) / (2*pi)
+
+    return delta, freq
 end
 
 
