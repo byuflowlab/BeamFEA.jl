@@ -119,9 +119,9 @@ end
 computes FEM matrices for one 12-dof beam element
 
 q = [x1, thetax1, y1, thetay1, z1, thetaz1, ... repeat for 2]
-z is axial
+x is axial
 """
-function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
+function beam_matrix(L, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
 
     # initialize
     K = zeros(2*DOF, 2*DOF)  # stiffness matrix
@@ -129,19 +129,19 @@ function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
     F = zeros(2*DOF)  # force vector
 
     # --- axial ----
-    idx = [5, 11]
+    idx = [1, 7]
 
-    kz = axialstiffness(EA, L)
-    K[idx, idx] = kz
+    kx = axialstiffness(EA, L)
+    K[idx, idx] = kx
 
-    mz = axialinertial(rhoA, L)
-    M[idx, idx] = mz
+    mx = axialinertial(rhoA, L)
+    M[idx, idx] = mx
 
-    fz = axialloads(Pz, L)
-    F[idx] = fz
+    fx = axialloads(Px, L)
+    F[idx] = fx
 
     # --- torsion ---
-    idx = [6, 12]
+    idx = [2, 8]
 
     kt = axialstiffness(GJ, L)
     K[idx, idx] = kt
@@ -151,29 +151,29 @@ function beam_matrix(L, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz)
 
     # no distributed torsional loads
 
-    # --- bending in x ---
-    idx = [1, 2, 7, 8]
-
-    kx = bendingstiffness(EIx, L)
-    K[idx, idx] = kx
-
-    mx = bendinginertial(rhoA, L)
-    M[idx, idx] = mx
-
-    fx = bendingloads(Px, L)
-    F[idx] = fx
-
-
     # --- bending in y ---
-    ky = bendingstiffness(EIy, L)
     idx = [3, 4, 9, 10]
+
+    ky = bendingstiffness(EIy, L)
     K[idx, idx] = ky
 
-    my = mx  # inertial is same in x and y
+    my = bendinginertial(rhoA, L)
     M[idx, idx] = my
 
     fy = bendingloads(Py, L)
     F[idx] = fy
+
+
+    # --- bending in z ---
+    kz = bendingstiffness(EIy, L)
+    idx = [5, 6, 11, 12]
+    K[idx, idx] = kz
+
+    mz = my  # inertial is same in y and z
+    M[idx, idx] = mz
+
+    fz = bendingloads(Pz, L)
+    F[idx] = fz
 
 
     return K, M, F
@@ -186,10 +186,10 @@ end
 # EIx, EA etc. are arrays of length nodes
 # matrix are of size DOF*nodes x DOF*nodes
 # addedK: additional stiffness (or infinite stiffness for a rigid connection)
-function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+function fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
-    nodes = length(z)
+    nodes = length(x)
     elements = nodes - 1
 
     # --- assemble global matrices -----
@@ -200,7 +200,7 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     for i = 1:elements
         start = (i-1)*DOF  # (0, 0) start of matrix
 
-        Ksub, Msub, Fsub = beam_matrix(z[i+1] - z[i], EIx[i:i+1], EIy[i:i+1], EA[i:i+1],
+        Ksub, Msub, Fsub = beam_matrix(x[i+1] - x[i], EIy[i:i+1], EIz[i:i+1], EA[i:i+1],
             GJ[i:i+1], rhoA[i:i+1], rhoJ[i:i+1], Px[i:i+1], Py[i:i+1], Pz[i:i+1])
 
         idx = start+1:start+2*DOF
@@ -270,6 +270,36 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
     freq = sqrt.(lambda) / (2*pi)
 
     return delta, freq
+end
+
+
+
+function shear_and_bending(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fxpt, Fypt, Fzpt, Mxpt, Mypt, Mzpt)
+
+    # initialize
+    n = length(x)
+    Nx = zeros(n)
+    Vy = zeros(n)
+    Vz = zeros(n)
+    Tx = zeros(n)
+    My = zeros(n)
+    Mz = zeros(n)
+
+    # integrate
+    for i = 1:n-1
+        Nx[i+1] = Nx[i] + Fxpt[i] + (x[i+1] - x[i])*(Px[i] + Px[i+1])/2.0
+        Vy[i+1] = Vy[i] + Fypt[i] + (x[i+1] - x[i])*(Py[i] + Py[i+1])/2.0
+        Vz[i+1] = Vz[i] + Fzpt[i] + (x[i+1] - x[i])*(Pz[i] + Pz[i+1])/2.0
+
+        Tx[i+1] = Tx[i] + Mxpt[i]
+        My[i+1] = My[i] + Mypt[i] + (x[i+1] - x[i])*(Vz[i] + Fzpt[i]) + (x[i+1] - x[i])^2*(2*Pz[i] + Pz[i+1])/6.0
+        Mz[i+1] = Mz[i] + Mzpt[i] - (x[i+1] - x[i])*(Vy[i] + Fypt[i]) - (x[i+1] - x[i])^2*(2*Py[i] + Py[i+1])/6.0
+    end
+
+    # strain
+    epsilon_axial = Tx./EA + Mz./EIz.*y - My./EIy.*z
+
+    return epsilon_axial, Nx, Vy, Vz, Tx, My, Mz
 end
 
 

@@ -12,9 +12,9 @@ using Base.Test
     L = 4.0
     p0 = 5.0
 
-    z = [0, L]
-    EIx = [E*I, E*I]
+    x = [0, L]
     EIy = [E*I, E*I]
+    EIz = [E*I, E*I]
     EA = [E*1.0, E*1.0]
     GJ = [1.0, 1.0]
     rhoA = [1.0, 1.0]
@@ -35,7 +35,7 @@ using Base.Test
     kthetay = [0.0, Inf]
     kthetaz = [0.0, Inf]
 
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     @test delta[3] ≈ -p0*L^4/(30*E*I)  atol=1e-6
@@ -55,9 +55,9 @@ using Base.Test
     L = 4.0
     P = 5.0
 
-    z = [0, L/2, L]
-    EIx = [E*I, 5*E*I, 9*E*I]
+    x = [0, L/2, L]
     EIy = [E*I, 5*E*I, 9*E*I]
+    EIz = [E*I, 5*E*I, 9*E*I]
     EA = [1.0, 1.0, 1.0]
     GJ = [1.0, 1.0, 1.0]
     rhoA = [1.0, 1.0, 1.0]
@@ -78,7 +78,7 @@ using Base.Test
     kthetay = [0.0, 0.0, Inf]
     kthetaz = [0.0, 0.0, Inf]
 
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     @test delta[3] ≈ -0.051166*P*L^3/(E*I)  atol=5e-3
@@ -105,9 +105,9 @@ end  # end unit test
 
     n = 1
     nodes = n + 1
-    z = linspace(0, n*L, nodes)
-    EIx = E*I*ones(nodes)
+    x = linspace(0, n*L, nodes)
     EIy = E*I*ones(nodes)
+    EIz = E*I*ones(nodes)
     EA = ones(nodes)
     GJ = ones(nodes)
     rhoA = rho*A*ones(nodes)
@@ -130,7 +130,7 @@ end  # end unit test
     kthetay = zeros(nodes)
     kthetaz = zeros(nodes)
 
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     alpha = rho * A * (n*L)^4 / (840.0 * E * I)
@@ -144,8 +144,8 @@ end  # end unit test
     kx[1] = Inf
     ky[1] = Inf
     kz[1] = Inf
-    kx[end] = Inf
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    ky[end] = Inf
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     @test isapprox(freq[2], sqrt(0.14286 / alpha) / (2*pi), atol=1e-6)
@@ -155,9 +155,9 @@ end  # end unit test
 
     n = 2
     nodes = n + 1
-    z = linspace(0, n*L, nodes)
-    EIx = E*I*ones(nodes)
+    x = linspace(0, n*L, nodes)
     EIy = E*I*ones(nodes)
+    EIz = E*I*ones(nodes)
     EA = ones(nodes)
     GJ = ones(nodes)
     rhoA = rho*A*ones(nodes)
@@ -179,7 +179,7 @@ end  # end unit test
     kthetay = zeros(nodes)
     kthetaz = zeros(nodes)
 
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     alpha = rho * A * (n*L)^4 / (840.0 * E * I)
@@ -197,8 +197,8 @@ end  # end unit test
     kx[1] = Inf
     ky[1] = Inf
     kz[1] = Inf
-    kx[end] = Inf
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    ky[end] = Inf
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     @test isapprox(freq[2], sqrt(0.11688 / alpha) / (2*pi), atol=1e-6)
@@ -211,9 +211,9 @@ end  # end unit test
 
     n = 3
     nodes = n + 1
-    z = linspace(0, n*L, nodes)
-    EIx = E*I*ones(nodes)
+    x = linspace(0, n*L, nodes)
     EIy = E*I*ones(nodes)
+    EIz = E*I*ones(nodes)
     EA = ones(nodes)
     GJ = ones(nodes)
     rhoA = rho*A*ones(nodes)
@@ -235,7 +235,7 @@ end  # end unit test
     kthetay = zeros(nodes)
     kthetaz = zeros(nodes)
 
-    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+    delta, freq = BeamFEA.fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
     alpha = rho * A * (n*L)^4 / (840.0 * E * I)
