@@ -81,9 +81,6 @@ using Base.Test
     delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
 
-    # println(delta)
-    # println(-0.051166*P*L^3/(E*I))
-    # println(0.090668*P*L^2/(E*I))
     @test delta[3] ≈ -0.051166*P*L^3/(E*I)  atol=5e-3
     @test delta[4] ≈ 0.090668*P*L^2/(E*I)  atol=1e-2
     @test delta[1] ≈ 0.0  atol=1e-6
@@ -108,7 +105,7 @@ end  # end unit test
 
     n = 1
     nodes = n + 1
-    z = linspace(0, L, nodes)
+    z = linspace(0, n*L, nodes)
     EIx = E*I*ones(nodes)
     EIy = E*I*ones(nodes)
     EA = ones(nodes)
@@ -142,5 +139,126 @@ end  # end unit test
     @test isapprox(freq[3], sqrt(0.85714 / alpha) / (2*pi), atol=1e-6)
     @test isapprox(freq[5], sqrt(10.0 / alpha) / (2*pi), atol=1e-6)
     @test isapprox(freq[6], sqrt(10.0 / alpha) / (2*pi), atol=1e-6)
+
+    # simply supported
+    kx[1] = Inf
+    ky[1] = Inf
+    kz[1] = Inf
+    kx[end] = Inf
+    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+        Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
+
+    @test isapprox(freq[2], sqrt(0.14286 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[5], sqrt(3.0 / alpha) / (2*pi), atol=1e-6)
+
+    # second test from same paper (n = 2)
+
+    n = 2
+    nodes = n + 1
+    z = linspace(0, n*L, nodes)
+    EIx = E*I*ones(nodes)
+    EIy = E*I*ones(nodes)
+    EA = ones(nodes)
+    GJ = ones(nodes)
+    rhoA = rho*A*ones(nodes)
+    rhoJ = ones(nodes)
+
+    Px = zeros(nodes)
+    Py = zeros(nodes)
+    Pz = zeros(nodes)
+    Fx = zeros(nodes)
+    Fy = zeros(nodes)
+    Fz = zeros(nodes)
+    Mx = zeros(nodes)
+    My = zeros(nodes)
+    Mz = zeros(nodes)
+    kx = zeros(nodes)
+    ky = zeros(nodes)
+    kz = zeros(nodes)
+    kthetax = zeros(nodes)
+    kthetay = zeros(nodes)
+    kthetaz = zeros(nodes)
+
+    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+        Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
+
+    alpha = rho * A * (n*L)^4 / (840.0 * E * I)
+
+    @test isapprox(freq[2], sqrt(0.59858 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[3], sqrt(0.59858 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[6], sqrt(5.8629 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[7], sqrt(5.8629 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[9], sqrt(36.659 / alpha) / (2*pi), atol=2e-6)
+    @test isapprox(freq[10], sqrt(36.659 / alpha) / (2*pi), atol=2e-6)
+    @test isapprox(freq[11], sqrt(93.566 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[12], sqrt(93.566 / alpha) / (2*pi), atol=1e-6)
+
+    # simply supported
+    kx[1] = Inf
+    ky[1] = Inf
+    kz[1] = Inf
+    kx[end] = Inf
+    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+        Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
+
+    @test isapprox(freq[2], sqrt(0.11688 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[5], sqrt(2.2858 / alpha) / (2*pi), atol=1e-6)
+    @test isapprox(freq[8], sqrt(14.441 / alpha) / (2*pi), atol=1e-5)
+    @test isapprox(freq[11], sqrt(48 / alpha) / (2*pi), atol=1e-6)
+
+
+    # third test from same paper (n = 3)
+
+    n = 3
+    nodes = n + 1
+    z = linspace(0, n*L, nodes)
+    EIx = E*I*ones(nodes)
+    EIy = E*I*ones(nodes)
+    EA = ones(nodes)
+    GJ = ones(nodes)
+    rhoA = rho*A*ones(nodes)
+    rhoJ = ones(nodes)
+
+    Px = zeros(nodes)
+    Py = zeros(nodes)
+    Pz = zeros(nodes)
+    Fx = zeros(nodes)
+    Fy = zeros(nodes)
+    Fz = zeros(nodes)
+    Mx = zeros(nodes)
+    My = zeros(nodes)
+    Mz = zeros(nodes)
+    kx = zeros(nodes)
+    ky = zeros(nodes)
+    kz = zeros(nodes)
+    kthetax = zeros(nodes)
+    kthetay = zeros(nodes)
+    kthetaz = zeros(nodes)
+
+    delta, freq = BeamFEA.fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
+        Fx, Fy, Fz, Mx, My, Mz, kx, ky, kz, kthetax, kthetay, kthetaz)
+
+    alpha = rho * A * (n*L)^4 / (840.0 * E * I)
+
+
+    @test isapprox(freq[2], sqrt(0.59919 / alpha)/(2*pi), atol=1e-6)
+    @test isapprox(freq[3], sqrt(0.59919 / alpha)/(2*pi), atol=1e-6)
+
+    @test isapprox(freq[6], sqrt(4.5750 / alpha)/(2*pi), atol=1e-6)
+    @test isapprox(freq[7], sqrt(4.5750 / alpha)/(2*pi), atol=1e-6)
+
+    @test isapprox(freq[9], sqrt(22.010 / alpha)/(2*pi), atol=1e-6)
+    @test isapprox(freq[10], sqrt(22.010 / alpha)/(2*pi), atol=1e-6)
+
+    @test isapprox(freq[12], sqrt(70.920 / alpha)/(2*pi), atol=1e-6)
+    @test isapprox(freq[13], sqrt(70.920 / alpha)/(2*pi), atol=1e-6)
+
+    @test isapprox(freq[15], sqrt(265.91 / alpha)/(2*pi), atol=1e-5)
+    @test isapprox(freq[16], sqrt(265.91 / alpha)/(2*pi), atol=1e-5)
+
+    @test isapprox(freq[17], sqrt(402.40 / alpha)/(2*pi), atol=1e-6)
+    @test isapprox(freq[18], sqrt(402.40 / alpha)/(2*pi), atol=1e-6)
+
+
 
 end

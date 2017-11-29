@@ -257,7 +257,7 @@ function fea_analysis(z, EIx, EIy, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
         deltasub = K\F
         delta[save] = deltasub  # insert nonzero deflections
     catch err
-        println("WARNING: structure improperly constrained.  Deflections incorrect. (Exception: ", err, ")")
+        println("WARNING: structure improperly constrained if deflections are desired.")  #  (Exception: ", err, ")")
     end
 
     # ----- compute eigenvalues -----
