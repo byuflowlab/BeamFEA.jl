@@ -273,8 +273,10 @@ function fea_analysis(x, EIy, EIz, EA, GJ, rhoA, rhoJ, Px, Py, Pz,
 end
 
 
-
-function shear_and_bending(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fxpt, Fypt, Fzpt, Mxpt, Mypt, Mzpt)
+"""
+Currently it assumes that the free end is at index 1.  TODO: allow either.
+"""
+function strain(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fxpt, Fypt, Fzpt, Mxpt, Mypt, Mzpt)
 
     # initialize
     n = length(x)
@@ -292,8 +294,8 @@ function shear_and_bending(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fxpt, Fypt, Fzpt, 
         Vz[i+1] = Vz[i] + Fzpt[i] + (x[i+1] - x[i])*(Pz[i] + Pz[i+1])/2.0
 
         Tx[i+1] = Tx[i] + Mxpt[i]
-        My[i+1] = My[i] + Mypt[i] + (x[i+1] - x[i])*(Vz[i] + Fzpt[i]) + (x[i+1] - x[i])^2*(2*Pz[i] + Pz[i+1])/6.0
-        Mz[i+1] = Mz[i] + Mzpt[i] - (x[i+1] - x[i])*(Vy[i] + Fypt[i]) - (x[i+1] - x[i])^2*(2*Py[i] + Py[i+1])/6.0
+        My[i+1] = My[i] + Mypt[i] - (x[i+1] - x[i])*(Vz[i] + Fzpt[i]) - (x[i+1] - x[i])^2*(2*Pz[i] + Pz[i+1])/6.0
+        Mz[i+1] = Mz[i] + Mzpt[i] + (x[i+1] - x[i])*(Vy[i] + Fypt[i]) + (x[i+1] - x[i])^2*(2*Py[i] + Py[i+1])/6.0
     end
 
     # strain

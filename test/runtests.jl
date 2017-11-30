@@ -262,3 +262,42 @@ end  # end unit test
 
 
 end
+
+
+
+@testset "shear and bending" begin
+
+    # Test data from "Mechanical of Materials", Gere, 6th ed., pg. 273
+    # cantilevered beam with linear distributed load
+
+    L = 10.0
+    q0 = 3.0
+
+    n = 1
+    nodes = n+1
+
+    x = linspace(0, L, nodes)
+    y = zeros(nodes)
+    z = zeros(nodes)
+    EIy = ones(nodes)
+    EIz = ones(nodes)
+    EA = ones(nodes)
+    Px = [0.0, 0.0]
+    Py = [0.0, -q0]
+    Pz = [0.0, 0.0]
+    Fx = zeros(nodes)
+    Fy = zeros(nodes)
+    Fz = zeros(nodes)
+    Mx = zeros(nodes)
+    My = zeros(nodes)
+    Mz = zeros(nodes)
+
+    epsilon, Nx, Vy, Vz, Tx, My, Mz = BeamFEA.strain(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fx, Fy, Fz, Mx, My, Mz)
+
+    @test isapprox(Vy[1], 0.0, atol=1e-6)
+    @test isapprox(Vy[2], -q0*L/2.0, atol=1e-6)
+    @test isapprox(Mz[1], 0.0, atol=1e-6)
+    @test isapprox(Mz[2], -q0*L^2/6, atol=1e-6)
+
+
+end
