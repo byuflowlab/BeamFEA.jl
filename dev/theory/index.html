@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Theory · BeamFEA.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">BeamFEA.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Theory</a><ul class="internal"><li><a class="tocitem" href="#Stiffness-Matrix-1"><span>Stiffness Matrix</span></a></li><li><a class="tocitem" href="#Distributed-Loads-1"><span>Distributed Loads</span></a></li><li><a class="tocitem" href="#Inertial-Matrix-1"><span>Inertial Matrix</span></a></li><li><a class="tocitem" href="#Displacement-1"><span>Displacement</span></a></li><li><a class="tocitem" href="#Natural-frequencies-1"><span>Natural frequencies</span></a></li><li><a class="tocitem" href="#Axial-Stress-1"><span>Axial Stress</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Theory</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Theory</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/byuflowlab/BeamFEA.jl/blob/master/docs/src/theory.md#L" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Theory-1"><a class="docs-heading-anchor" href="#Theory-1">Theory</a><a class="docs-heading-anchor-permalink" href="#Theory-1" title="Permalink"></a></h1><p>This theory mostly follows that described by Yang<sup class="footnote-reference"><a id="citeref-1" href="#footnote-1">[1]</a></sup>, although we use linearly varying elements rather than constant elements.  </p><h2 id="Stiffness-Matrix-1"><a class="docs-heading-anchor" href="#Stiffness-Matrix-1">Stiffness Matrix</a><a class="docs-heading-anchor-permalink" href="#Stiffness-Matrix-1" title="Permalink"></a></h2><p>We assume that stiffness properties vary linearly between nodes:</p><div>\[EI(\eta) = EI_1 + (EI_2 - EI_1) \eta\]</div><p>The stiffness matrix is given by integrating (5.13, Yang):</p><div>\[\begin{aligned}
+k_{ij} &amp;= \int_0^L EI f_i^{\prime\prime} f_j^{\prime\prime} dx \\
+  &amp;= L\int_0^1 EI(\eta) f_i^{\prime\prime}(\eta) f_j^{\prime\prime}(\eta) d\eta \\
+\end{aligned}\]</div><p>The second derivative of the shape functions for beams are given as (5.10, Yang):</p><div>\[\begin{aligned}
+f_1^{\prime\prime}(\eta) &amp;= \frac{1}{L^2}\left( -6 + 12 \eta \right)\\
+f_2^{\prime\prime}(\eta) &amp;= \frac{1}{L} \left( -4 + 6 \eta\right)\\
+f_3^{\prime\prime}(\eta) &amp;= \frac{1}{L^2}\left( 6 - 12 \eta \right)\\
+f_4^{\prime\prime}(\eta) &amp;= \frac{1}{L} \left( -2 + 6 \eta\right)\\
+\end{aligned}\]</div><p>The integrals are worked out below.</p><pre><code class="language-julia">using Polynomials
+
+f1pp = Poly([-6.0, 12.0])
+f2pp = Poly([-4.0, 6.0])
+f3pp = Poly([6.0, -12.0])
+f4pp = Poly([-2.0, 6.0])
+
+e1 = Poly([1.0, -1.0]) 
+e2 = Poly([0.0, 1.0])
+
+function coeff(f1, f2, L1, L2)
+
+    pint = polyint(e1*f1*f2)
+    c1 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    pint = polyint(e2*f1*f2)
+    c2 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    println(c1, &quot; &quot;, c2, &quot; &quot;, L1 + L2 - 1)
+    
+end
+
+L1 = 2.0
+L2 = 1.0
+L3 = 2.0
+L4 = 1.0
+
+coeff(f1pp, f1pp, L1, L1)
+coeff(f1pp, f2pp, L1, L2)
+coeff(f1pp, f3pp, L1, L3)
+coeff(f1pp, f4pp, L1, L4)
+println()
+
+coeff(f2pp, f2pp, L2, L2)
+coeff(f2pp, f3pp, L2, L3)
+coeff(f2pp, f4pp, L2, L4)
+println()
+
+coeff(f3pp, f3pp, L3, L3)
+coeff(f3pp, f4pp, L3, L4)
+println()
+
+coeff(f4pp, f4pp, L4, L4)</code></pre><p>Which produces the following output:</p><pre><code class="language-none">6.0 6.0 3
+4.0 2.0 2
+-6.0 -6.0 3
+2.0 4.0 2
+
+3.0 1.0 1
+-4.0 -2.0 2
+1.0 1.0 1
+
+6.0 6.0 3
+-2.0 -4.0 2
+
+1.0 3.0 1</code></pre><p>Mathematically, we can express the (symmetric) stiffness matrix as:</p><div>\[\begin{bmatrix}
+    F_{y1} \\ M_{y1} \\ F_{y2} \\ M_{y2}
+\end{bmatrix}
+= 
+\begin{bmatrix}
+    \frac{6EI_1 + 6 EI_2}{L^3} &amp; \frac{4EI_1 + 2 EI_2}{L^2} &amp; \frac{-6EI_1 - 6 EI_2}{L^3} &amp;\frac{2EI_1 + 4 EI_2}{L^2}\\
+    sym &amp; \frac{3EI_1 + 1 EI_2}{L} &amp; \frac{-4EI_1 - 2 EI_2}{L^2} &amp;\frac{EI_1 + EI_2}{L}\\
+    sym &amp; sym &amp; \frac{6EI_1 + 6 EI_2}{L^3} &amp;\frac{-2 EI_1  -4 EI_2}{L^2}\\
+    sym &amp; sym &amp; sym &amp;\frac{ EI_1 + 3 EI_2}{L}\\
+\end{bmatrix}
+\begin{bmatrix}
+    y_1 \\ \theta_{y1} \\ y_2 \\ \theta_{y2}
+\end{bmatrix}\]</div><p>and similarly in z.</p><p>For axial (and torsional) stiffness, the stiffness matrix is given by (4.9, Yang): <span>$k_{ij} = L \int_0^1 EA(\eta) f_i^\prime(\eta) f_j^\prime(eta) d\eta$</span> and the derivatives of the axial shape functions are:</p><div>\[\begin{aligned}
+f_1^\prime &amp;= -1/L\\
+f_2^\prime &amp;= 1/L
+\end{aligned}\]</div><p>We assume stiffness properties vary linearly yielding:</p><div>\[\begin{bmatrix}
+    F_{x1} \\ F_{x2}
+\end{bmatrix}
+= \frac{EA_1 + EA_2}{2 L}
+\begin{bmatrix}
+    1 &amp; -1 \\
+    -1 &amp; 1
+\end{bmatrix}
+\begin{bmatrix}
+    x_1 \\ x_2
+\end{bmatrix}\]</div><p>Torsion is the same form:</p><div>\[\begin{bmatrix}
+    M_{x1} \\ M_{x2}
+\end{bmatrix}
+= \frac{GJ_1 + GJ_2}{2 L}
+\begin{bmatrix}
+    1 &amp; -1 \\
+    -1 &amp; 1
+\end{bmatrix}
+\begin{bmatrix}
+    \theta_{x1} \\ \theta_{x2}
+\end{bmatrix}\]</div><h2 id="Distributed-Loads-1"><a class="docs-heading-anchor" href="#Distributed-Loads-1">Distributed Loads</a><a class="docs-heading-anchor-permalink" href="#Distributed-Loads-1" title="Permalink"></a></h2><p>We assume that distributed loads vary linearly between nodes: <span>$p(\eta) = p_1 + (p_2 - p_1) \eta$</span></p><p>The equivalent concentrated loads are given by integrating (5.73, Yang):</p><div>\[\begin{aligned}
+F_i &amp;= \int_0^L p(x) f_i(x) dx \\
+&amp;= L \int_0^1 p(\eta) f_i(\eta) d\eta \\
+\end{aligned}\]</div><p>The shape functions for beams are given as (5.7, Yang):</p><div>\[\begin{aligned}
+f_1(\eta) &amp;= 1 - 3\eta^2 + 2 \eta^3\\
+f_2(\eta) &amp;= L \left( \eta - 2\eta^2 + \eta^3 \right)\\
+f_3(\eta) &amp;= 3\eta^2 - 2 \eta^3\\
+f_4(\eta) &amp;= L \left( - \eta^2 + \eta^3 \right)
+\end{aligned}\]</div><p>The integrals are worked out below.</p><pre><code class="language-julia">
+
+f1 = Poly([1.0, 0.0, -3.0, 2.0])
+f2 = Poly([0.0, 1.0, -2.0, 1.0])
+f3 = Poly([0.0, 0.0, 3.0, -2.0])
+f4 = Poly([0.0, 0.0, -1.0, 1.0])
+
+p1 = Poly([1.0, -1.0])  # p2 is 0
+p2 = Poly([0.0, 1.0])  # p1 is 0
+
+function coeff(f)
+
+    pint = polyint(p1*f)
+    c1 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    pint = polyint(p2*f)
+    c2 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    println(c1, &quot; &quot;, c2)
+    
+end
+
+coeff(f1)
+coeff(f2)
+coeff(f3)
+coeff(f4)</code></pre><pre><code class="language-none">0.35 0.15000000000000002
+0.050000000000000044 0.033333333333333326
+0.15000000000000002 0.35
+-0.033333333333333326 -0.04999999999999999</code></pre><p>mathematically:</p><div>\[\begin{aligned}
+F_{y1} &amp;= L \left[ \frac{7}{20} p_1 + \frac{3}{20} p_2 \right]\\
+M_{y1} &amp;= L^2 \left[ \frac{1}{20} p_1 + \frac{1}{30} p_2 \right]\\
+F_{y2} &amp;= L \left[ \frac{3}{20} p_1 + \frac{7}{20} p_2 \right]\\
+M_{y2} &amp;= L^2 \left[ -\frac{1}{30} p_1 - \frac{1}{20} p_2 \right]
+\end{aligned}\]</div><p>and similarly for z.</p><p>The axial loads are similar, but simpler to calculate.  Using the shape functions for the axial loads:</p><div>\[\begin{aligned}
+f_1 &amp;= 1 - \eta\\
+f_2 &amp;= \eta\\
+\end{aligned}\]</div><p>The integral yields:</p><div>\[\begin{aligned}
+F_{x1} &amp;= L \left[ \frac{p_1}{3} + \frac{p_2}{6} \right]\\
+F_{x2} &amp;= L \left[ \frac{p_1}{6} + \frac{p_2}{3} \right]\\
+\end{aligned}\]</div><p>It is assumed that the distributed loads <span>$P_x$</span> are aligned with the center of twist (or close enough) so there are no distributed torsional loads.</p><h2 id="Inertial-Matrix-1"><a class="docs-heading-anchor" href="#Inertial-Matrix-1">Inertial Matrix</a><a class="docs-heading-anchor-permalink" href="#Inertial-Matrix-1" title="Permalink"></a></h2><p>We assume that mass properties vary linearly between nodes: <span>$\rho A(\eta) = \rho A_1 + (\rho A_2 - \rho A_1) \eta$</span></p><p>The mass matrix integral is the same for bending and the axial direction (7.18 and 7.29, Yang):</p><div>\[\begin{aligned}
+m_{ij} &amp;= \int_0^L \rho A f_i f_j dx \\
+  &amp;= L\int_0^1 \rho A(\eta) f_i(\eta) f_j(\eta) d\eta \\
+\end{aligned}\]</div><p>The shape functions were given previously under Distributed Loads and the integrals are worked out below.</p><pre><code class="language-julia">
+f1 = Poly([1.0, 0.0, -3.0, 2.0])
+f2 = Poly([0.0, 1.0, -2.0, 1.0])
+f3 = Poly([0.0, 0.0, 3.0, -2.0])
+f4 = Poly([0.0, 0.0, -1.0, 1.0])
+
+A1 = Poly([1.0, -1.0])  # A2 is 0
+A2 = Poly([0.0, 1.0])  # A1 is 0
+
+function coeff(f1, f2, L1, L2)
+
+    pint = polyint(A1*f1*f2)
+    c1 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    pint = polyint(A2*f1*f2)
+    c2 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    println(c1*420, &quot; &quot;, c2*420, &quot; &quot;, L1 + L2 + 1)
+    
+end
+
+L1 = 0
+L2 = 1
+L3 = 0
+L4 = 1
+
+coeff(f1, f1, L1, L1)
+coeff(f1, f2, L1, L2)
+coeff(f1, f3, L1, L3)
+coeff(f1, f4, L1, L4)
+println()
+
+coeff(f2, f2, L2, L2)
+coeff(f2, f3, L2, L3)
+coeff(f2, f4, L2, L4)
+println()
+
+coeff(f3, f3, L3, L3)
+coeff(f3, f4, L3, L4)
+println()
+
+coeff(f4, f4, L4, L4)</code></pre><pre><code class="language-none">119.99999999999994 36.00000000000006 1
+15.000000000000039 6.999999999999952 2
+27.000000000000092 26.99999999999995 1
+-6.999999999999952 -6.000000000000002 2
+
+2.499999999999921 1.4999999999999947 3
+5.999999999999885 7.000000000000021 2
+-1.4999999999999947 -1.4999999999999947 3
+
+35.999999999999964 120.00000000000004 1
+-7.000000000000021 -14.999999999999993 2
+
+1.4999999999999947 2.5000000000000027 3</code></pre><p>Mathematically, we can express the (symmetric) inertial matrix as:</p><div>\[\begin{bmatrix}
+    F_{y1} \\ M_{y1} \\ F_{y2} \\ M_{y2}
+\end{bmatrix}
+= 
+\frac{1}{420}
+\begin{bmatrix}
+    (120 \rho A_1 + 36 \rho A_2) L &amp; (15 \rho A_1 + 7 \rho A_2) L^2 &amp; (27 \rho A_1 + 27 \rho A_2) L &amp; (-7 \rho A_1 -6  \rho A_2) L^2\\
+    sym &amp; (2.5 \rho A_1 + 1.5 \rho A_2) L^3 &amp; (6 \rho A_1 + 7 \rho A_2) L^2 &amp; (-1.5 \rho A_1 - 1.5 \rho A_2) L^3\\
+    sym &amp; sym &amp; (36 \rho A_1 + 120 \rho A_2) L &amp; (-7 \rho A_1 -15 \rho A_2) L^2\\
+    sym &amp; sym &amp; sym &amp; (1.5 \rho A_1 + 2.5 \rho A_2) L^3\\
+\end{bmatrix}
+\begin{bmatrix}
+    \ddot{y_1} \\ \ddot{\theta_{y1}} \\ y_2 \\ \theta_{y2}
+\end{bmatrix}\]</div><p>and similarly for z.</p><p>In the axial direction the integral is the same but the shape functions are simpler:</p><div>\[\begin{aligned}
+f_1 &amp;= 1 - \eta\\
+f_2 &amp;= \eta\\
+\end{aligned}\]</div><div>\[\begin{aligned}
+m_{ij} = L\int_0^1 \rho A(\eta) f_i(\eta) f_j(\eta) d\eta \\
+\end{aligned}\]</div><pre><code class="language-julia">f1 = Poly([1.0, -1.0])
+f2 = Poly([0.0, 1.0])
+
+A1 = Poly([1.0, -1.0])  # A2 is 0
+A2 = Poly([0.0, 1.0])  # A1 is 0
+
+function coeff(f1, f2)
+
+    pint = polyint(A1*f1*f2)
+    c1 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    pint = polyint(A2*f1*f2)
+    c2 = polyval(pint, 1.0) - polyval(pint, 0.0)
+
+    println(c1, &quot; &quot;, c2)
+    
+end
+
+
+coeff(f1, f1)
+coeff(f1, f2)
+coeff(f2, f2)</code></pre><pre><code class="language-none">0.25 0.08333333333333337
+0.08333333333333337 0.08333333333333331
+0.08333333333333331 0.25</code></pre><p>The result is:</p><div>\[\begin{bmatrix}
+    F_{x1} \\ F_{x2}
+\end{bmatrix}
+= L
+\begin{bmatrix}
+    \frac{1}{4}\rho A_1 + \frac{1}{12}\rho A_2 &amp; \frac{1}{12}\rho A_1 + \frac{1}{12}\rho A_2 \\
+    \frac{1}{12}\rho A_1 + \frac{1}{12}\rho A_2 &amp; \frac{1}{12}\rho A_1 + \frac{1}{4}\rho A_2
+\end{bmatrix}
+\begin{bmatrix}
+    \ddot{x_1} \\ \ddot{x_2}
+\end{bmatrix}\]</div><p>Torsional inertia is of the same form: The result is:</p><div>\[\begin{bmatrix}
+    M_{x1} \\ M_{x2}
+\end{bmatrix}
+= L
+\begin{bmatrix}
+    \frac{1}{4}\rho J_1 + \frac{1}{12}\rho J_2 &amp; \frac{1}{12}\rho J_1 + \frac{1}{12}\rho J_2 \\
+    \frac{1}{12}\rho J_1 + \frac{1}{12}\rho J_2 &amp; \frac{1}{12}\rho J_1 + \frac{1}{4}\rho J_2
+\end{bmatrix}
+\begin{bmatrix}
+    \ddot{\theta_{x1}} \\ \ddot{\theta_{x2}}
+\end{bmatrix}\]</div><h2 id="Displacement-1"><a class="docs-heading-anchor" href="#Displacement-1">Displacement</a><a class="docs-heading-anchor-permalink" href="#Displacement-1" title="Permalink"></a></h2><p>Displacement is easily computed by solving the linear system (after applying boundary conditions):  <span>$K u = F$</span></p><h2 id="Natural-frequencies-1"><a class="docs-heading-anchor" href="#Natural-frequencies-1">Natural frequencies</a><a class="docs-heading-anchor-permalink" href="#Natural-frequencies-1" title="Permalink"></a></h2><p>Natural frequencies are found by solving the generalized eigenvalue problem (7.24, Yang) <span>$[K - \omega^2 M]u = 0$</span> Solving the generalized eigenvalue problem gives <span>$\lambda = \omega^2$</span>.  We find the corresponding frequencies as: <span>$f = \frac{\sqrt{\lambda}}{2\pi}$</span></p><h2 id="Axial-Stress-1"><a class="docs-heading-anchor" href="#Axial-Stress-1">Axial Stress</a><a class="docs-heading-anchor-permalink" href="#Axial-Stress-1" title="Permalink"></a></h2><p>The computation of axial stress is actually independent from the finite element analysis and depends only on the loading  and geometry.  First the forces and moments must be integrated along the beam starting from a free-end where the forces and moments are known (they are zero unless there is an external point load right at the tip).  Each segment of the beam must be integrated sequentially.  </p><p>A given beam segment is defined below:</p><p>&lt;img src=&quot;element.png&quot; width=&quot;400px&quot;/&gt;</p><p>We assume that the distributed load varies linear, but separate distributions can exist in each direction (including axial in <span>$x$</span>).  External point forces and moments <span>$F_{pt}$</span> and <span>$M_{pt}$</span> can exist at each node in all three directions.  From this definition we can integrate to find the forces and moments throughout the beam.  Positive moments we define for moments on the left side of the beam using the right-hand rule according to the defined coordinate system.</p><div>\[\begin{aligned}
+    V_{i+1} &amp;= V_i + {F_{pt}}_{i} + (x_{i+1}-x_i) \int_{0}^1 q(\eta) d\eta \\
+    M_{i+1} &amp;= M_i + {M_{pt}}_{i} + (x_{i+1}-x_i) \int_{0}^1 V(\eta) d\eta
+\end{aligned}\]</div><p>If the distributed load is linear: <span>$q(\eta) = q_i + \eta(q_{i+1} - q_i)$</span> then:</p><div>\[\begin{aligned}
+    V(\eta) &amp;= V_i + {F_{pt}}_{i} + (x_{i+1}-x_i) \int \left(q_i + \eta(q_{i+1} - q_i)\right) d\eta \\
+    &amp;= V_i + {F_{pt}}_{i} + (x_{i+1}-x_i) \left(q_i \eta + \frac{\eta^2}{2}(q_{i+1} - q_i)\right)\\
+    M(\eta) &amp;= M_i + {M_{pt}}_{i} + (x_{i+1}-x_i) \int \left( V_i + {F_{pt}}_{i} + (x_{i+1}-x_i) \left(q_i \eta + \frac{\eta^2}{2}(q_{i+1} - q_i)\right) \right) d\eta\\
+    &amp;= M_i + {M_{pt}}_{i} + (x_{i+1}-x_i)(V_i + {F_{pt}}_{i}) \eta +    (x_{i+1}-x_i)^2 \left(q_i \frac{\eta^2}{2} + \frac{\eta^3}{6}(q_{i+1} - q_i)\right) 
+\end{aligned}\]</div><p>Evaluating at the end point (<span>$\eta = 1$</span>) and simplifying yields:</p><div>\[\begin{aligned}
+    V_{i+1} &amp;= V_i + {F_{pt}}_{i} + (x_{i+1}-x_i) \left(\frac{q_i + q_{i+1}}{2} \right) \\
+    M_{i+1} &amp;= M_i + {M_{pt}}_{i} + (x_{i+1}-x_i)(V_i + {F_{pt}}_{i}) +  (x_{i+1}-x_i)^2 \left(\frac{2 q_i + q_{i+1}}{6}\right)
+\end{aligned}\]</div><p>This applies for all three forces: <span>$V_x, V_y, N_z$</span>.  For the moments, because this is a beam and we assume any axial loads act along the axis, the torsional loads <span>$T_z$</span> will not change excepting point torsion loads.  However, the bending moments <span>$M_y, M_z$</span> are affected by the distributed loads <span>$q_y$</span> and <span>$q_z$</span>.  Explicitly using our coordinate sign conventions:</p><div>\[\begin{aligned}
+    {N_x}_{i+1} &amp;= {N_x}_i + {{F_x}_{pt}}_{i} + (x_{i+1}-x_i) \left(\frac{{q_x}_i + {q_x}_{i+1}}{2} \right) \\
+    {V_y}_{i+1} &amp;= {V_y}_i + {{F_y}_{pt}}_{i} + (x_{i+1}-x_i) \left(\frac{{q_y}_i + {q_y}_{i+1}}{2} \right) \\
+    {V_z}_{i+1} &amp;= {V_z}_i + {{F_z}_{pt}}_{i} + (x_{i+1}-x_i) \left(\frac{{q_z}_i + {q_z}_{i+1}}{2} \right) \\
+    {T_x}_{i+1} &amp;= {T_x}_i + {{T_x}_{pt}}_{i} \\
+    {M_y}_{i+1} &amp;= {M_y}_i + {{M_y}_{pt}}_{i} - (x_{i+1}-x_i)({V_z}_i + {{F_z}_{pt}}_{i}) - (x_{i+1}-x_i)^2 \left(\frac{2 {q_z}_i + {q_z}_{i+1}}{6}\right)\\
+    {M_z}_{i+1} &amp;= {M_z}_i + {{M_z}_{pt}}_{i} + (x_{i+1}-x_i)({V_y}_i + {{F_y}_{pt}}_{i}) + (x_{i+1}-x_i)^2 \left(\frac{2 {q_y}_i + {q_y}_{i+1}}{6}\right)
+\end{aligned}\]</div><p>With known shear/moment distribution and stiffness properties we can compute the stress as follows (or use <span>$E(y, z) = 1$</span> to compute strain):</p><div>\[\sigma_{xx}(y, z) = E(y, z) \left(\frac{M_z}{[EI]_z} y - \frac{M_y}{[EI]_y} z + \frac{N_x}{[EA]} \right)\]</div><section class="footnotes is-size-7"><ul><li class="footnote" id="footnote-1"><a class="tag is-link" href="#citeref-1">1</a>Yang, T. Y., Finite element structural analysis, Prentice Hall, 1986.</li></ul></section></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 7 December 2019 06:43">Saturday 7 December 2019</span>. Using Julia version 1.2.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
