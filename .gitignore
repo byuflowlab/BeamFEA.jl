@@ -4,3 +4,4 @@
 *.ipynb_checkpoints
 *.idraw
 *.DS_Store
+docs/build/
