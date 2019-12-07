@@ -1,0 +1,17 @@
+name = "BeamFEA"
+uuid = "1c6afc9f-7c27-4d4e-9886-57fa3981c933"
+authors = ["Andrew Ning <aning@byu.edu>"]
+version = "0.1.0"
+
+[deps]
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
