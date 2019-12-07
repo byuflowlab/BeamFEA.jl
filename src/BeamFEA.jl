@@ -4,7 +4,7 @@ import LinearAlgebra: Symmetric, eigvals
 import Interpolations: LinearInterpolation
 
 export BeamProperties, Loads, NoLoads, Stiffness, Deflection
-export fea
+export fea, strain
 
 const DOF = 6
 
@@ -243,6 +243,14 @@ struct Deflection{TF}
     thetaz::Vector{TF}
 end
 
+struct ShearBending{TF}
+    Nx::Vector{TF}
+    Vy::Vector{TF}
+    Vz::Vector{TF}
+    Tx::Vector{TF}
+    My::Vector{TF}
+    Mz::Vector{TF}
+end
 
 """
     fea_analysis(beam, loads, stiffness)
@@ -370,33 +378,46 @@ end
 """
 Currently it assumes that the free end is at index 1.  TODO: allow either.
 """
-# function strain(x, y, z, EIy, EIz, EA, Px, Py, Pz, Fxpt, Fypt, Fzpt, Mxpt, Mypt, Mzpt)
+function strain(y, z, beam, loads)
 
-#     # initialize
-#     n = length(x)
-#     Nx = zeros(n)
-#     Vy = zeros(n)
-#     Vz = zeros(n)
-#     Tx = zeros(n)
-#     My = zeros(n)
-#     Mz = zeros(n)
+    # initialize
+    n = length(beam.x)
+    type = typeof(beam.EIy[1])
+    Nx = Vector{type}(undef, n)
+    Vy = Vector{type}(undef, n)
+    Vz = Vector{type}(undef, n)
+    Tx = Vector{type}(undef, n)
+    My = Vector{type}(undef, n)
+    Mz = Vector{type}(undef, n)
 
-#     # integrate
-#     for i = 1:n-1
-#         Nx[i+1] = Nx[i] + Fxpt[i] + (x[i+1] - x[i])*(Px[i] + Px[i+1])/2.0
-#         Vy[i+1] = Vy[i] + Fypt[i] + (x[i+1] - x[i])*(Py[i] + Py[i+1])/2.0
-#         Vz[i+1] = Vz[i] + Fzpt[i] + (x[i+1] - x[i])*(Pz[i] + Pz[i+1])/2.0
+    # unpack
+    x = beam.x
+    Px = loads.Px
+    Py = loads.Py
+    Pz = loads.Pz
+    Fxpt = loads.Fx
+    Fypt = loads.Fy
+    Fzpt = loads.Fz
+    Mxpt = loads.Mx
+    Mypt = loads.My
+    Mzpt = loads.Mz
 
-#         Tx[i+1] = Tx[i] + Mxpt[i]
-#         My[i+1] = My[i] + Mypt[i] - (x[i+1] - x[i])*(Vz[i] + Fzpt[i]) - (x[i+1] - x[i])^2*(2*Pz[i] + Pz[i+1])/6.0
-#         Mz[i+1] = Mz[i] + Mzpt[i] + (x[i+1] - x[i])*(Vy[i] + Fypt[i]) + (x[i+1] - x[i])^2*(2*Py[i] + Py[i+1])/6.0
-#     end
+    # integrate
+    for i = 1:n-1
+        Nx[i+1] = Nx[i] + Fxpt[i] + (x[i+1] - x[i])*(Px[i] + Px[i+1])/2.0
+        Vy[i+1] = Vy[i] + Fypt[i] + (x[i+1] - x[i])*(Py[i] + Py[i+1])/2.0
+        Vz[i+1] = Vz[i] + Fzpt[i] + (x[i+1] - x[i])*(Pz[i] + Pz[i+1])/2.0
 
-#     # strain
-#     epsilon_axial = Tx./EA + Mz./EIz.*y - My./EIy.*z
+        Tx[i+1] = Tx[i] + Mxpt[i]
+        My[i+1] = My[i] + Mypt[i] - (x[i+1] - x[i])*(Vz[i] + Fzpt[i]) - (x[i+1] - x[i])^2*(2*Pz[i] + Pz[i+1])/6.0
+        Mz[i+1] = Mz[i] + Mzpt[i] + (x[i+1] - x[i])*(Vy[i] + Fypt[i]) + (x[i+1] - x[i])^2*(2*Py[i] + Py[i+1])/6.0
+    end
 
-#     return epsilon_axial, Nx, Vy, Vz, Tx, My, Mz
-# end
+    # strain
+    epsilon_axial = Tx./beam.EA + Mz./beam.EIz.*y - My./beam.EIy.*z
+
+    return epsilon_axial, ShearBending(Nx, Vy, Vz, Tx, My, Mz)
+end
 
 
 end # module
