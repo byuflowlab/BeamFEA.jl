@@ -424,15 +424,48 @@ Natural frequencies are found by solving the generalized eigenvalue problem (7.2
 Solving the generalized eigenvalue problem gives ``\lambda = \omega^2``.  We find the corresponding frequencies as:
 ``f = \frac{\sqrt{\lambda}}{2\pi}``
 
+## Coordinate Systems
+
+The coordinate system used by Yang is a simple one where, if ``x`` is in the x-direction, all forces and moments in that plane are denoted ``y``.  However, this is non-standard.  The natural coordinate system (external) is compared to the one used by Yang (internal) in the figures below.
+
+x-y coordinates:
+![](xy.png)
+
+x-z coordinates:
+![](xz.png)
+
+From these figures we see that internally we must change the following inputs:
+```math
+\begin{aligned}
+M_{y, int} &= -M_{z, ext}\\
+M_{z, int} &= M_{y, ext}\\
+I_{y, int} &= I_{z, ext}\\
+I_{z, int} &= I_{y, ext}\\
+k_{\theta_y, int} &= k_{\theta_z, ext}\\
+k_{\theta_z, int} &= k_{\theta_y, ext}
+\end{aligned}
+```
+The signs for the moments of inertia don't change as it involves squared quantities, and stiffness don't change sign as the stiffness is positive from bending in either direction.  The following outputs must also change:
+```math
+\begin{aligned}
+\theta_{y, ext} &= \theta_{z, int}\\
+\theta_{z, ext} &= -\theta_{y, int}
+\end{aligned}
+```
+These transformations happen internally to allow us to use Yang's conventions more naturally, while the user need not worry about that and can use the standard external system.
+
+
 ## Axial Stress
 
-The computation of axial stress is actually independent from the finite element analysis and depends only on the loading  and geometry.  First the forces and moments must be integrated along the beam starting from a free-end where the forces and moments are known (they are zero unless there is an external point load right at the tip).  Each segment of the beam must be integrated sequentially.  
+The computation of axial stress is actually independent from the finite element analysis and depends only on the loading and geometry.  Because we do not use the FEA analysis we use the natural (external) coordinate system directly.  First the forces and moments must be integrated along the beam starting from a free-end where the forces and moments are known (they are zero unless there is an external point load right at the tip).  Each segment of the beam must be integrated sequentially.  
 
 A given beam segment is defined below:
 
-<img src="element.png" width="400px"/>
+![](element.png)
 
-We assume that the distributed load varies linear, but separate distributions can exist in each direction (including axial in ``x``).  External point forces and moments ``F_{pt}`` and ``M_{pt}`` can exist at each node in all three directions.  From this definition we can integrate to find the forces and moments throughout the beam.  Positive moments we define for moments on the left side of the beam using the right-hand rule according to the defined coordinate system.
+We assume that the distributed load varies linearly and that separate distributions can exist in each direction (including axial in ``x``).  External point forces and moments ``F_{pt}`` and ``M_{pt}`` can exist at each node in all three directions.  From this definition we can integrate to find the forces and moments throughout the beam.  Positive moments are defined using the right-hand rule (external coordinate system).
+
+<!-- we define for moments on the left side of the beam using the right-hand rule according to the defined coordinate system. -->
 
 ```math
 \begin{aligned}
@@ -475,7 +508,7 @@ This applies for all three forces: ``V_x, V_y, N_z``.  For the moments, because 
 With known shear/moment distribution and stiffness properties we can compute the stress as follows (or use ``E(y, z) = 1`` to compute strain):
 
 ```math
-\sigma_{xx}(y, z) = E(y, z) \left(\frac{M_z}{[EI]_z} y - \frac{M_y}{[EI]_y} z + \frac{N_x}{[EA]} \right)
+\sigma_{xx}(y, z) = E(y, z) \left(-\frac{M_z}{[EI]_z} y + \frac{M_y}{[EI]_y} z + \frac{N_x}{[EA]} \right)
 ```
 
 

@@ -283,6 +283,11 @@ function fea(beam, loads, stiffness)
     Mz = linterp(loads.x, loads.Mz, beam.x)
     # ----------------------------------
 
+    # ---- global to fea convention ----
+    My, Mz = -Mz, My
+    # EIy/z and kthetay/z changes done in place
+    # ---------------------------------
+
     # --- assemble global matrices -----
     type = typeof(beam.EIy[1])
     K = zeros(type, DOF*nodes, DOF*nodes)
@@ -292,7 +297,8 @@ function fea(beam, loads, stiffness)
     # pull out submatrix for each element
     for i = 1:elements
         
-        Ksub, Msub, Fsub = beam_matrix(beam.x[i+1] - beam.x[i], beam.EIy[i:i+1], beam.EIz[i:i+1], 
+        Ksub, Msub, Fsub = beam_matrix(beam.x[i+1] - beam.x[i], 
+            beam.EIz[i:i+1], beam.EIy[i:i+1], # swapped y and z (global -> fea convention)
             beam.EA[i:i+1], beam.GJ[i:i+1], beam.rhoA[i:i+1], beam.rhoJ[i:i+1], 
             Px[i:i+1], Py[i:i+1], Pz[i:i+1])
         
@@ -326,8 +332,8 @@ function fea(beam, loads, stiffness)
 
         start = (i-1)*DOF
 
-        kvec = [stiffness.kx[i], stiffness.kthetax[i], stiffness.ky[i], stiffness.kthetay[i], 
-            stiffness.kz[i], stiffness.kthetaz[i]]  # order for convenience
+        kvec = [stiffness.kx[i], stiffness.kthetax[i], stiffness.ky[i], stiffness.kthetaz[i],  # swapped y and z (global -> fea convention)
+            stiffness.kz[i], stiffness.kthetay[i]]  # order for convenience
 
         for j = 1:DOF  # iterate through each DOF
 
@@ -359,8 +365,7 @@ function fea(beam, loads, stiffness)
     end
 
     defl = Deflection(delta[1:DOF:end], delta[3:DOF:end], delta[5:DOF:end],
-        delta[2:DOF:end], delta[4:DOF:end], delta[6:DOF:end])
-    # TODO: redefine angle directions?
+        delta[2:DOF:end], delta[6:DOF:end], -delta[4:DOF:end])  # swapped y and z (fea -> global convention)
 
     # ----- compute eigenvalues -----
     lambda = eigvals(K, M)  # eigenvalues are omega^2 (currently not using eigenvectors)
@@ -414,7 +419,7 @@ function strain(y, z, beam, loads)
     end
 
     # strain
-    epsilon_axial = Tx./beam.EA + Mz./beam.EIz.*y - My./beam.EIy.*z
+    epsilon_axial = Tx./beam.EA - Mz./beam.EIz.*y + My./beam.EIy.*z
 
     return epsilon_axial, ShearBending(Nx, Vy, Vz, Tx, My, Mz)
 end

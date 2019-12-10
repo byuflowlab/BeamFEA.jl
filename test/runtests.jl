@@ -44,11 +44,11 @@ using Test
     defl, freq = fea(beam, loads, stiffness)
 
     @test isapprox(defl.y[1], -p0*L^4/(30*E*I), atol=1e-15)
-    @test isapprox(defl.thetay[1], p0*L^3/(24*E*I), atol=1e-15)
+    @test isapprox(defl.thetaz[1], -p0*L^3/(24*E*I), atol=1e-15)
     @test defl.x[1] == 0.0
-    @test defl.thetax[1] == 0.0
     @test defl.z[1] == 0.0
-    @test defl.thetaz[1] == 0.0
+    @test defl.thetax[1] == 0.0
+    @test defl.thetay[1] == 0.0
 
 
     # --- Test data from "Finite Element Structural Analysis", Yang, pg. 180 ----
@@ -91,11 +91,11 @@ using Test
     defl, freq = fea(beam, loads, stiffness)
 
     @test isapprox(defl.y[1], -0.051166*P*L^3/(E*I), atol=1e-2)
-    @test isapprox(defl.thetay[1], 0.090668*P*L^2/(E*I), atol=1e-2)
+    @test isapprox(defl.thetaz[1], -0.090668*P*L^2/(E*I), atol=1e-2)
     @test defl.x[1] == 0.0
-    @test defl.thetax[1] == 0.0
     @test defl.z[1] == 0.0
-    @test defl.thetaz[1] == 0.0
+    @test defl.thetax[1] == 0.0
+    @test defl.thetay[1] == 0.0
 
 end  # end unit test
 

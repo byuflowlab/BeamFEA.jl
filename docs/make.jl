@@ -10,7 +10,6 @@ makedocs(;
     repo="https://github.com/byuflowlab/BeamFEA.jl/blob/{commit}{path}#L{line}",
     sitename="BeamFEA.jl",
     authors="Andrew Ning <aning@byu.edu>",
-    assets=String[],
 )
 
 deploydocs(
