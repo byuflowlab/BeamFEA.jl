@@ -1,10 +1,11 @@
-# BeamFEA
+# BeamFEA (Archived)
 
 <!--
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://byuflowlab.github.io/BeamFEA.jl/stable)
 -->
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://byuflowlab.github.io/BeamFEA.jl/dev)
 
+THIS CODE HAS BEEN SUPERSEDED by [GXBeam.jl](https://github.com/byuflowlab/GXBeam.jl)
 
 *A 6DOF beam finite element model*
 
